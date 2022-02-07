@@ -1,49 +1,67 @@
-import { Component } from "react";
-import s from './ContactForm.module.css'
-
+import { Component } from 'react';
+import PropTypes from 'prop-types';
+import s from './ContactForm.module.css';
+// Выносим объект с примитивами в константу, чтобы было удобно сбрасывать.
+// Нельзя использовать, если в каком-то свойстве состояния хранится сложный тип.
 const INITIAL_STATE = {
   name: '',
   number: '',
 };
 
 class ContactForm extends Component {
-    
-
-
-    state = {
+  // в форме стейт нужен только при сабмите, поэтому храним
+  // его в компоненте формы, а при сабмите - отдаем наружу
+  state = {
     ...INITIAL_STATE,
-    };
+  };
+  // Для всех инпутов создаем один обработчик
+  // "паттерн ввод данных" ->
+  handleInputChange = e => {
+    // подходит для инпутов, у которых есть name and value, 
+    // для радиокнопок, но не чекбоксов
+    const { name, value } = e.currentTarget;
+    // Различать инпуты будем по атрибуту "name",
+    // применяя вычисляемые свойства объекта
+    this.setState({ [name]: value });
+  };
 
-    handleInputChange = e => {
-        const { name, value } = e.currentTarget;
-        this.setState({ [name]: value });
-        console.log(this.state)
-    }
+  handleBtnSubmit = e => {
+    e.preventDefault();
+    // у обьекта this (а это наш class ContactForm) проп, который 
+    // передается при вызове в App - функция addContact. передаем 
+    // ей текущее состояние state при Submitе формы
+    this.props.addContact({ ...this.state });
+    this.reset();
+  };
 
-    render() {
+  reset = () => {
+    this.setState({ ...INITIAL_STATE });
+  };
 
-        const { name, number } = this.state;
+  render() {
+    const { name, number } = this.state;
+    
+    return (
+      <form
+        onSubmit={this.handleBtnSubmit} 
+        className={s.form} 
+        autoComplete="off">
+        
+        <label className={s.label}>
+          Name
+          <input
+            name="name"
+            type="text"
+            pattern="^[a-zA-Zа-яА-Я]+(([' -][a-zA-Zа-яА-Я ])?[a-zA-Zа-яА-Я]*)*$"
+            title="Имя может состоять только из букв, апострофа, тире и пробелов. Например Adrian, Jacob Mercer, Charles de Batz de Castelmore d'Artagnan и т. п."
+            required
+                value={name}
+                onChange={this.handleInputChange}
+                className={s.input}
+          />
+        </label>
 
-        return (
-            <form>
-                <label className={s.labelFrom}>
-                    Name
-                     <input
-                    className={s.input}
-                    type="text" 
-                    name="name"
-                    pattern="^[a-zA-Zа-яА-Я]+(([' -][a-zA-Zа-яА-Я ])?[a-zA-Zа-яА-Я]*)*$"
-                    title="Name may contain only letters, apostrophe, dash and spaces. For example Adrian, Jacob Mercer, Charles de Batz de Castelmore d'Artagnan"
-                    required
-                          value={name}
-                          onChange={this.handleInputChange}
-                          className={s.input}
-                    />
-                </label>
-               
-                <button onClick={event => console.log(event)} className={s.button} type="button">Add Contact</button>
-
-                 <label className={s.label}>
+        <label className={s.label}>
           Number
           <input
             name="number"
@@ -56,11 +74,21 @@ class ContactForm extends Component {
                 className={s.input}
           />
         </label>        
-            </form>
-        )
-    }
+
+        <button type="submit" className={s.btn}>Add contact</button>
+      </form>
+    );
+  }
+};
+
+export default ContactForm;
+
+ContactForm.propTypes = {
+  addContact: PropTypes.func.isRequired,
 }
-
-
-
-export default ContactForm
+// Проблема обновления состояния - всегда должно быть новое после рендера,  
+// а не мутировать по ссылке старое.
+// Проверка на имутабеольность (равны ли эти значения между рендерами) ->
+// componentDidUpdate(prevProps, prevState) {
+//   console.log(prevState.name === this.state.name);
+// }
